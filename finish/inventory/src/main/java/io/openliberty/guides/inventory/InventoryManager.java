@@ -11,6 +11,7 @@
 // end::copyright[]
 package io.openliberty.guides.inventory;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Properties;
 import io.openliberty.guides.inventory.client.SystemClient;
@@ -23,6 +24,9 @@ import java.util.Collections;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.opentracing.Traced;
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
 import io.opentracing.Scope;
 import io.opentracing.Tracer;
 import io.opentracing.Span;
@@ -32,19 +36,43 @@ import io.opentracing.Span;
 public class InventoryManager {
 
     @Inject
-    @ConfigProperty(name = "system.http.port")
+    @ConfigProperty(name = "system.http.port", defaultValue = "9080")
     int SYSTEM_PORT;
 
     private List<SystemData> systems = Collections.synchronizedList(new ArrayList<>());
-    private SystemClient systemClient = new SystemClient();
+
+    @Inject
+    @RestClient
+    private SystemClient systemClient;
+
     // tag::customTracer[]
     @Inject Tracer tracer;
     // end::customTracer[]
 
+
     public Properties get(String hostname) {
-        systemClient.init(hostname, SYSTEM_PORT);
-        Properties properties = systemClient.getProperties();
-        return properties;
+        if( hostname == null) {
+            // return default
+            Properties properties = systemClient.getProperties();
+            return properties;
+        }
+        else {
+            String customURIString = "http://" + hostname + ":" + SYSTEM_PORT + "/system";
+            URI customURI = null;
+            try {
+                customURI = URI.create(customURIString);
+                SystemClient customRestClient = RestClientBuilder.newBuilder()
+                                                    .baseUri(customURI)
+                                                    .build(SystemClient.class);
+
+                return customRestClient.getProperties();
+
+            }
+            catch (Exception e) {
+               System.err.println("The given URI is unreachable.");
+               return null;
+            }
+        }
     }
 
     public void add(String hostname, Properties systemProps) {

@@ -92,6 +92,14 @@
                 <groupId>io.openliberty.tools</groupId>
                 <artifactId>liberty-maven-plugin</artifactId>
                 <version>3.7.1</version>
+                <configuration>
+                    <runtimeArtifact>
+                        <groupId>io.openliberty</groupId>
+                        <artifactId>openliberty-microProfile5</artifactId>
+                        <version>22.0.0.12</version>
+                        <type>zip</type>
+                    </runtimeArtifact>
+                </configuration>                   
             </plugin>
             <!-- Plugin to run unit tests -->
             <plugin>
